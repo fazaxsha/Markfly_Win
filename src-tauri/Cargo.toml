@@ -1,0 +1,32 @@
+[package]
+name = "markfly"
+version = "0.4.1"
+edition = "2021"
+description = "Markfly desktop shell: Rust/Tauri backend for the Markfly markdown viewer (Windows)"
+license = "MIT"
+
+[lib]
+name = "markfly_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "markfly"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-clipboard-manager = "2"
+markfly-core = { path = "../crates/markfly-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "macros", "time", "sync"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json"] }
+futures-util = "0.3"
+sha2 = "0.10"
+hex = "0.4"
+url = "2"

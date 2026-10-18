@@ -1,0 +1,19 @@
+[package]
+name = "markfly-core"
+version = "0.4.1"
+edition = "2021"
+description = "Core logic for Markfly: markdown pipeline, path authorization, preferences, file watching and safe URL import"
+license = "MIT"
+
+[dependencies]
+ammonia = "4"
+notify = "6"
+pulldown-cmark = "0.12"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["net"] }
+url = "2"
+
+[dev-dependencies]
+tempfile = "3"

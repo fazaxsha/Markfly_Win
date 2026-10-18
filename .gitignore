@@ -1,0 +1,23 @@
+# Rust / Cargo
+/target
+src-tauri/target/
+**/*.rs.bk
+
+# Node
+node_modules/
+dist/
+
+# Build output / installers (upload via GitHub Releases instead)
+artifacts/
+
+# Tauri generated schemas
+src-tauri/gen/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Env / logs
+*.log

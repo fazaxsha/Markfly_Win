@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-label="Markfly — native Markdown viewer for Windows">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#faf9f5"/>
+      <stop offset="1" stop-color="#f0e9dd"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d68a6d"/>
+      <stop offset="1" stop-color="#a9583e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#cc785c"/>
+      <stop offset="1" stop-color="#a9583e"/>
+    </linearGradient>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.6" fill="#cc785c" opacity="0.18"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="360" fill="url(#bg)"/>
+  <rect x="760" y="0" width="520" height="360" fill="url(#dots)"/>
+  <rect x="0" y="296" width="1280" height="64" fill="#cc785c" opacity="0.08"/>
+
+  <!-- logo tile -->
+  <g transform="translate(96,84)">
+    <rect width="192" height="192" rx="44" fill="url(#tile)"/>
+    <g fill="#faf9f5">
+      <ellipse cx="76" cy="86" rx="26" ry="57" transform="rotate(38 76 86)"/>
+      <ellipse cx="76" cy="106" rx="26" ry="57" transform="rotate(-38 76 106)"/>
+      <ellipse cx="116" cy="86" rx="26" ry="57" transform="rotate(-38 116 86)"/>
+      <ellipse cx="116" cy="106" rx="26" ry="57" transform="rotate(38 116 106)"/>
+    </g>
+    <rect x="92" y="52" width="8" height="88" rx="4" fill="#7a3b28"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="344" y="164" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="92" font-weight="750" fill="#141413" letter-spacing="-2">Markfly</text>
+  <text x="348" y="216" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="30" font-weight="600" fill="#cc785c">A fast, private, native Markdown viewer for Windows</text>
+  <text x="348" y="254" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="21" fill="#6c6a64">Rust core + Tauri shell + Vue 3 renderer — GitHub-flavored rendering, Mermaid, KaTeX</text>
+
+  <!-- chips -->
+  <g font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" font-weight="600">
+    <rect x="348" y="282" width="118" height="40" rx="20" fill="#141413"/>
+    <text x="379" y="308" fill="#faf9f5">Rust 1.99</text>
+    <rect x="478" y="282" width="132" height="40" rx="20" fill="#cc785c"/>
+    <text x="503" y="308" fill="#faf9f5">Tauri 2.x</text>
+    <rect x="622" y="282" width="150" height="40" rx="20" fill="#efe9de"/>
+    <text x="646" y="308" fill="#3d3d3a">Single .exe ~9 MB</text>
+    <rect x="784" y="282" width="176" height="40" rx="20" fill="#efe9de"/>
+    <text x="807" y="308" fill="#3d3d3a">No Electron runtime</text>
+  </g>
+</svg>
