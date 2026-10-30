@@ -5,7 +5,7 @@
 <h1 align="center">Markfly_Win</h1>
 
 <p align="center">
-  <strong>A fast, private, native Markdown viewer for Windows — written in Rust.</strong>
+  <strong>A fast, private, native Markdown viewer and editor for Windows — written in Rust.</strong>
 </p>
 
 <p align="center">
@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Rust-1.99%2B-DEA584?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
   <img src="https://img.shields.io/badge/Tauri-2.x-24C8DB?style=for-the-badge&logo=tauri&logoColor=white" alt="Tauri">
   <img src="https://img.shields.io/badge/Vue-3-42B883?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3">
-  <img src="https://img.shields.io/badge/tests-16%2F16-brightgreen?style=for-the-badge" alt="tests">
+  <img src="https://img.shields.io/badge/tests-19%2F19-brightgreen?style=for-the-badge" alt="tests">
   <img src="https://img.shields.io/badge/license-MIT-cc785c?style=for-the-badge" alt="license">
 </p>
 
@@ -21,6 +21,7 @@
   <a href="#-features">Features</a> ·
   <a href="#-install">Install</a> ·
   <a href="#-build-from-source">Build</a> ·
+  <a href="#-keyboard-shortcuts">Shortcuts</a> ·
   <a href="#-architecture">Architecture</a> ·
   <a href="#-security-model">Security</a> ·
   <a href="#-roadmap">Roadmap</a>
@@ -30,19 +31,21 @@
 
 ## ✨ What is this?
 
-**Markfly** is a desktop Markdown viewer: open a file, get beautifully rendered,
+**Markfly** is a desktop Markdown app: open a file, get beautifully rendered,
 GitHub-flavored Markdown instantly — tables, task lists, Mermaid diagrams, KaTeX
 math, and syntax highlighting, with an outline panel, tabs, find-in-document and
-auto-reload.
+auto-reload. Create a new document straight from the app, edit it in a built-in
+source editor and save with `Ctrl+S`.
 
 This repository is a **complete Windows port of
 [markfly.md](https://github.com/rizkidarmawan21/markfly.md)** — an Electron + Vue
-app originally built for macOS — rebuilt with **Rust + Tauri**.
+app originally built for macOS — rebuilt with **Rust + Tauri**, plus a Markdown
+create/edit/save workflow the original did not have.
 
 The Vue 3 renderer is preserved so rendering stays pixel-identical, while
 **every line of system-level logic — the markdown pipeline, sandboxed file
-access, URL import, file watching, clipboard, native menu, drag & drop, and the
-auto-updater — has been reimplemented in Rust**.
+access, file writing, URL import, file watching, clipboard, native menu,
+drag & drop, and the auto-updater — has been reimplemented in Rust**.
 
 | | Electron (original) | Rust port (this repo) |
 |---|---|---|
@@ -51,6 +54,7 @@ auto-updater — has been reimplemented in Rust**.
 | Peak memory | 300–500 MB | **~60–90 MB** |
 | Core logic | TypeScript | **Rust** (framework-agnostic crate) |
 | Platforms | macOS | **Windows** (arm64 ready) |
+| Create / edit / save | viewer only | ✅ built-in editor |
 
 > 📖 Deep-dive analysis, full Electron→Rust API mapping, assumptions and
 > compatibility notes: **[`PORTING-NOTES.md`](PORTING-NOTES.md)** (Bahasa Indonesia).
@@ -59,7 +63,10 @@ auto-updater — has been reimplemented in Rust**.
 
 ## 🚀 Features
 
-- ⚡ **Native & tiny** — single ~9 MB `.exe`, no Electron runtime, instant startup
+- ⚡ **Native & tiny** — single ~8 MB `.exe`, no Electron runtime, instant startup
+- 📝 **Create, edit & save** — `File → New Markdown…` (`Ctrl+N`) opens a save
+  dialog, a source editor with dirty tracking edits the file in place, `Ctrl+S`
+  writes it back; unsaved changes are flagged per tab and guarded on close
 - 🎨 **GitHub-flavored rendering** — tables, task lists, strikethrough, footnotes,
   auto heading anchors, light/dark GitHub themes
 - 📊 **Mermaid diagrams** — with *Diagram / Code / Split* view modes, injected
@@ -71,14 +78,15 @@ auto-updater — has been reimplemented in Rust**.
 - 🗂️ **Multi-tab** — open many documents, per-document zoom & source/preview
 - 💾 **Persistent state** — tabs, zoom, theme and sidebar width survive restarts
 - 🌗 **Light/dark theme** — follows the system by default
-- 🔄 **Auto-reload** — file changes on disk refresh the view (debounced watcher)
+- 🔄 **Auto-reload** — file changes on disk refresh the view (debounced watcher),
+  without ever clobbering an unsaved edit buffer
 - 🌐 **Import from URL** — HTTPS only, GitHub blob links converted to raw
 - 🧷 **Copy as Markdown** — one click to clipboard
 - 🖥️ **Windows-native** — drag & drop, file association
   (`.md .markdown .mdown .markdn`), CLI launch (`markfly.exe notes.md`), native
   menu with Open Recent, system clipboard integration
-- 🔒 **Security-first** — allow-list sanitizer, sandboxed file access, SSRF-guarded
-  URL import, checksum-verified updates
+- 🔒 **Security-first** — allow-list sanitizer, sandboxed file access, sandboxed
+  writes, SSRF-guarded URL import, checksum-verified updates
 - 🔄 **Built-in updater** — checks GitHub releases, verifies the installer
   (size + SHA-256) before offering it
 
@@ -115,9 +123,27 @@ Download `markfly.exe` and run it anywhere (USB stick, no install).
 - Double-click any `.md` file → opens in Markfly (file association included)
 - Or run from a terminal: `markfly.exe notes.md`
 - Or drag & drop a file onto the window
+- Create a new document with `Ctrl+N` and start typing
 
 > Requires **Windows 10/11 64-bit** with the WebView2 runtime
 > (preinstalled on Windows 10/11; the NSIS bootstrapper installs it if missing).
+
+> The installers are not code-signed, so Windows SmartScreen may warn about an
+> unknown publisher on first run. Choose **More info → Run anyway**.
+
+---
+
+## ⌨️ Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+N` | New Markdown file (native save dialog) |
+| `Ctrl+O` | Open Markdown file |
+| `Ctrl+S` | Save the active document |
+| `Ctrl+F` | Find in document (`Enter` / `Shift+Enter` to jump) |
+| `Esc` | Close the find bar |
+| `Ctrl+R` | Reload the window |
+| `F12` | Toggle Developer Tools (dev builds only) |
 
 ---
 
@@ -131,8 +157,8 @@ Prerequisites:
 
 ```bash
 # clone & install frontend dependencies
-git clone <your-repo-url>
-cd markfly-rs
+git clone https://github.com/fazaxsha/Markfly_Win.git
+cd Markfly_Win
 npm install
 
 # dev mode with hot reload
@@ -141,12 +167,33 @@ npm run tauri dev
 # production build -> src-tauri/target/release/bundle (MSI + NSIS)
 npm run tauri build
 
-# run the Rust unit tests (markdown pipeline, security policies, prefs, paths)
+# run the Rust unit tests (markdown pipeline, security policies, prefs, fs writes)
 cargo test -p markfly-core
 
 # bonus: render any markdown file to sanitized HTML straight from the terminal
 cargo run -p markfly-core --example dump < README.md > out.html
 ```
+
+### GNU toolchain notes
+
+Building with `stable-x86_64-pc-windows-gnu` works, but two environment details
+matter:
+
+1. **MinGW-w64 must be on `PATH`** so `gcc`, `dlltool` and `windres` are found.
+2. **The project path must not contain spaces** (or `CARGO_TARGET_DIR` must point
+   somewhere without spaces) — `windres` fails to preprocess paths containing
+   whitespace.
+
+```powershell
+$env:PATH = "C:\mingw64\bin;$env:USERPROFILE\.cargo\bin;" + $env:PATH
+$env:RUSTUP_TOOLCHAIN = "stable-x86_64-pc-windows-gnu"
+$env:CARGO_TARGET_DIR = "C:\markfly-target"
+npm run tauri build
+```
+
+The finished installers are written to
+`$env:CARGO_TARGET_DIR\release\bundle\{msi,nsis}` and the portable binary to
+`$env:CARGO_TARGET_DIR\release\markfly.exe`.
 
 ---
 
@@ -160,32 +207,34 @@ flowchart LR
     D -->|"v-html"| E["Vue 3 renderer<br/>github-markdown-css"]
     E -->|"post-processing"| F["KaTeX · Mermaid · highlight.js"]
     G["src-tauri (Rust)<br/>window · menu · watcher · clipboard · updater"] -->|"Tauri IPC commands"| E
+    E -->|"save_file / new_file_dialog"| G
 ```
 
 Three layers, clean separation:
 
 | Layer | Crate / folder | Responsibility |
 |---|---|---|
-| **Domain core** | `crates/markfly-core` | Markdown pipeline, security policies, prefs, path authorization, file watching, URL import — **pure Rust, no framework** |
+| **Domain core** | `crates/markfly-core` | Markdown pipeline, security policies, prefs, path authorization, file reading/writing, file watching, URL import — **pure Rust, no framework** |
 | **Desktop shell** | `src-tauri` | Tauri app: window, native menu, drag & drop, IPC commands, GitHub updater, icons |
 | **Renderer** | `src` | Vue 3 SPA (from the original app), adapted to call Rust commands via `@tauri-apps/api` |
 
 ```
 markfly-rs/
-├── crates/markfly-core/     # pure-Rust domain logic (16 unit tests)
+├── crates/markfly-core/     # pure-Rust domain logic (19 unit tests)
 │   ├── src/markdown.rs      #   parse → policies → sanitize (ammonia)
-│   ├── src/fsops.rs         #   markdown-only path authorization + 5 MB guard
+│   ├── src/fsops.rs         #   markdown-only path authorization, read/write, 5 MB guard
 │   ├── src/netfetch.rs      #   URL import + SSRF guard (validating DNS resolver)
 │   ├── src/prefs.rs         #   preference model + sanitization
 │   ├── src/watcher.rs       #   debounced file watching (notify)
 │   └── src/documents.rs     #   heading outline, document naming (win/unix paths)
 ├── src-tauri/               # Windows desktop shell (Tauri)
-│   ├── src/commands.rs      #   20 #[tauri::command] = the whole electronAPI bridge
+│   ├── src/commands.rs      #   22 #[tauri::command] = the whole electronAPI bridge
+│   ├── src/state.rs         #   authorized files, recents, watcher, write gate
 │   ├── src/menu.rs          #   native Windows menu + dynamic Open Recent
 │   ├── src/update.rs        #   GitHub release check, download, SHA-256 verify
 │   └── tauri.conf.json      #   window, CSP, MSI/NSIS, file associations
 └── src/                     # Vue 3 renderer
-    ├── App.vue              #   tabs, zoom, find, outline, URL import
+    ├── App.vue              #   tabs, zoom, find, outline, editor, URL import
     ├── markfly.ts           #   typed bridge to the Rust commands
     └── components/          #   Sidebar, TabBar, OutlinePanel, UpdateStatus
 ```
@@ -198,7 +247,13 @@ The original app shipped a strict security policy; the port reimplements it in
 Rust and hardens it further:
 
 - **Sandboxed file access** — only `.md/.markdown/.mdown/.markdn` paths that the
-  user explicitly opened (dialog, CLI, drag & drop) can ever be read; 5 MB cap
+  user explicitly opened or created (dialog, CLI, drag & drop) can ever be read;
+  5 MB cap
+- **Sandboxed writes** — `save_file` refuses any path that was not authorized
+  through the open/new dialog or restored from saved tabs, so the renderer can
+  never write to a file the user did not pick
+- **Non-destructive create** — `New Markdown` pre-fills `untitled.md`, appends a
+  missing `.md` extension, and never truncates an existing file
 - **Allow-list HTML sanitizer** (`ammonia`, replacing DOMPurify) — raw HTML in
   Markdown is escaped, not rendered; only safe tags, attributes and URL schemes
   survive
@@ -217,7 +272,7 @@ Rust and hardens it further:
 
 ## 🧭 Compatibility notes
 
-Verified on Windows 10/11 x64: 16/16 Rust unit tests, full release build
+Verified on Windows 10/11 x64: 19/19 Rust unit tests, full release build
 (MSI + NSIS + portable exe). See
 [`PORTING-NOTES.md`](PORTING-NOTES.md) for the full list of behavioral
 differences vs. the original app (parser edge cases, sanitizer strictness,
@@ -233,7 +288,9 @@ Highlights:
 
 ## ✅ Roadmap
 
+- [x] Create, edit and save Markdown inside the app
 - [ ] Single-instance mode (launching again focuses the existing window)
+- [ ] Folder / workspace tree in the sidebar
 - [ ] Windows ARM64 builds
 - [ ] TOML/Front-matter metadata panel
 - [ ] Plugin system for custom renderers (Rust)
@@ -246,6 +303,3 @@ Highlights:
 ## 📄 License
 
 MIT — see [`LICENSE`](LICENSE).
-
-#   M a r k f l y _ W i n  
- 

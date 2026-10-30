@@ -103,6 +103,63 @@ pub fn read_authorized_markdown(
     read_markdown_file(file_path)
 }
 
+/// Appends a `.md` extension when the chosen save path has none.
+///
+/// A different, non-markdown extension is rejected so the write path keeps the
+/// same markdown-only policy as reads. `C:\notes\journal` becomes
+/// `C:\notes\journal.md`; `C:\notes\journal.txt` is refused.
+pub fn ensure_markdown_extension(file_path: &str) -> Result<String, MarkflyError> {
+    if is_markdown_path(file_path) {
+        return Ok(file_path.to_string());
+    }
+    let file_name = file_path.rsplit(['/', '\\']).next().unwrap_or_default();
+    if file_name.is_empty() || file_name.contains('.') {
+        return Err(MarkflyError::NotMarkdown(file_path.to_string()));
+    }
+    Ok(format!("{file_path}.md"))
+}
+
+/// Creates an empty markdown file if it does not exist yet.
+///
+/// Never truncates an existing file: picking a name that already exists simply
+/// opens that file, so no content can be lost by choosing "New".
+pub fn create_markdown_file(file_path: &str) -> Result<(), MarkflyError> {
+    if !is_markdown_path(file_path) {
+        return Err(MarkflyError::NotMarkdown(file_path.to_string()));
+    }
+    match std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(file_path)
+    {
+        Ok(_) => Ok(()),
+        Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => Ok(()),
+        Err(err) => Err(MarkflyError::Io(err)),
+    }
+}
+
+/// Writes markdown content, enforcing the extension and size policies.
+pub fn write_markdown_file(file_path: &str, content: &str) -> Result<(), MarkflyError> {
+    if !is_markdown_path(file_path) {
+        return Err(MarkflyError::NotMarkdown(file_path.to_string()));
+    }
+    assert_markdown_size(content.len() as u64)?;
+    std::fs::write(file_path, content.as_bytes())?;
+    Ok(())
+}
+
+/// Writes a markdown file if (and only if) the path was authorized first.
+pub fn write_authorized_markdown(
+    authorized: &AuthorizedFiles,
+    file_path: &str,
+    content: &str,
+) -> Result<(), MarkflyError> {
+    if !authorized.has(file_path) {
+        return Err(MarkflyError::Unauthorized);
+    }
+    write_markdown_file(file_path, content)
+}
+
 /// Reads and size-checks a markdown file. Invalid UTF-8 is replaced the same
 /// way `Buffer.toString('utf-8')` does in the original implementation.
 pub fn read_markdown_file(file_path: &str) -> Result<String, MarkflyError> {

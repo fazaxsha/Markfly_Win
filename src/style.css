@@ -213,6 +213,21 @@ body {
   font-family: var(--mf-font-code);
 }
 
+.markdown-scroll .markdown-editor {
+  display: block;
+  min-height: 100%;
+  color: var(--mf-body);
+  font-family: var(--mf-font-code);
+  line-height: 1.6;
+  tab-size: 2;
+  caret-color: var(--mf-accent, #cc785c);
+  background: transparent;
+}
+
+.markdown-scroll .markdown-editor::selection {
+  background: color-mix(in srgb, var(--mf-accent, #cc785c) 28%, transparent);
+}
+
 .markdown-body {
   box-sizing: border-box;
   min-width: 200px;

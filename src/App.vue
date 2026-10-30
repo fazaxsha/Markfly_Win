@@ -45,6 +45,7 @@
         <TabBar
           :tabs="activeTabs"
           :activePath="activePath"
+          :dirtyPaths="dirtyPaths"
           @select="selectFile"
           @close="closeTab"
         />
@@ -67,6 +68,14 @@
           </button>
           <button @click="handleTabAction(activePath, 'copy')" title="Copy as Markdown" aria-label="Copy as Markdown" class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
             <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8V5a2 2 0 00-2-2H5a2 2 0 00-2 2v9a2 2 0 002 2h3"/></svg>
+          </button>
+          <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+          <button @click="handleTabAction(activePath, 'edit')" :title="isEditing ? 'Preview (read-only)' : 'Edit Markdown'" :aria-label="isEditing ? 'Preview (read-only)' : 'Edit Markdown'" :class="isEditing ? 'bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'" class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+            <svg v-if="!isEditing" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5.5"/></svg>
+            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+          </button>
+          <button @click="saveActiveTab" :disabled="!canSave" :title="canSave ? 'Save (Ctrl+S)' : 'No unsaved changes'" aria-label="Save" class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default">
+            <svg class="w-4 h-4" :class="isDirty ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-8H7v8M7 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v5h6"/></svg>
           </button>
           <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1"></div>
           <button @click="outlineOpen = !outlineOpen" :aria-label="outlineOpen ? 'Close outline' : 'Open outline'" :title="outlineOpen ? 'Close outline' : 'Open outline'" :class="outlineOpen ? 'bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'" class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
@@ -107,7 +116,16 @@
         <!-- Preview area -->
         <div v-else class="app-document-layout flex-1 min-h-0 flex overflow-hidden">
           <div ref="documentEl" class="flex-1 min-w-0 bg-white dark:bg-[#181715] transition-colors duration-200 markdown-scroll" :data-theme="isDark ? 'dark' : 'light'">
-            <div v-if="showRaw" class="h-full p-4 overflow-auto">
+            <textarea
+              v-if="isEditing"
+              ref="editorEl"
+              v-model="editorContent"
+              class="markdown-editor h-full w-full p-4 text-sm font-mono whitespace-pre-wrap break-words bg-transparent outline-none resize-none"
+              :data-theme="isDark ? 'dark' : 'light'"
+              spellcheck="false"
+              aria-label="Markdown source editor"
+            ></textarea>
+            <div v-else-if="showRaw" class="h-full p-4 overflow-auto">
               <pre class="raw-markdown text-sm font-mono whitespace-pre-wrap break-all">{{ fileContents[activePath] || '' }}</pre>
             </div>
             <article
@@ -133,6 +151,7 @@
     <div v-if="copyStatus" role="status" class="app-toast fixed bottom-5 right-5 z-40 rounded-lg bg-gray-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-gray-100 dark:text-gray-900">
       {{ copyStatus }}
     </div>
+
 
     <div v-if="urlImportOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.esc.stop="closeUrlImport">
       <button class="absolute inset-0 bg-black/25 backdrop-blur-sm cursor-default" aria-label="Close URL import dialog" @click="closeUrlImport"></button>
@@ -219,10 +238,17 @@ const fileContents = ref<Record<string, string>>({})
 const isDark = ref(false)
 const rendered = ref('')
 const outlineHeadings = ref<Heading[]>([])
-const documentViews = ref<Record<string, { zoom: number; showRaw: boolean }>>({})
+const documentViews = ref<Record<string, { zoom: number; showRaw: boolean; editing: boolean }>>({})
 const activeView = computed(() => activePath.value ? documentViews.value[activePath.value] : undefined)
 const activeZoom = computed(() => activeView.value?.zoom ?? 1)
 const showRaw = computed(() => activeView.value?.showRaw ?? false)
+const isEditing = computed(() => activeView.value?.editing ?? false)
+const editorEl = ref<HTMLTextAreaElement | null>(null)
+const editorContent = ref('')
+const drafts = ref<Record<string, string>>({})
+const dirtyPaths = ref<Set<string>>(new Set())
+const isDirty = computed(() => !!activePath.value && dirtyPaths.value.has(activePath.value))
+const canSave = computed(() => isDirty.value && !(activePath.value ? isRemotePath(activePath.value) : false))
 const outlineOpen = ref(false)
 const sidebarVisible = ref(true)
 const sidebarWidth = ref(260)
@@ -252,6 +278,8 @@ const copyStatus = ref('')
 let searchRanges: Range[] = []
 let copyStatusTimer: ReturnType<typeof setTimeout> | undefined
 let removeUpdateStateListener: (() => void) | null = null
+let removeMenuNewListener: (() => void) | null = null
+let removeMenuSaveListener: (() => void) | null = null
 let renderVersion = 0
 
 type MermaidMode = 'diagram' | 'code' | 'split'
@@ -386,8 +414,104 @@ async function openSearch() {
 }
 
 function ensureDocumentView(path: string) {
-  if (!documentViews.value[path]) documentViews.value[path] = { zoom: 1, showRaw: false }
+  if (!documentViews.value[path]) documentViews.value[path] = { zoom: 1, showRaw: false, editing: false }
 }
+
+function syncEditorContent() {
+  const path = activePath.value
+  if (!path || !isEditing.value) return
+  editorContent.value = drafts.value[path] ?? fileContents.value[path] ?? ''
+}
+
+function markDirty(path: string, dirty: boolean) {
+  const next = new Set(dirtyPaths.value)
+  if (dirty) next.add(path)
+  else next.delete(path)
+  dirtyPaths.value = next
+}
+
+function discardEdits(path: string) {
+  markDirty(path, false)
+  const next = { ...drafts.value }
+  delete next[path]
+  drafts.value = next
+  if (path === activePath.value) syncEditorContent()
+}
+
+async function toggleEditing() {
+  const path = activePath.value
+  if (!path) return
+  if (isRemotePath(path)) {
+    copyStatus.value = 'Remote documents are read-only'
+    setTimeout(() => { copyStatus.value = '' }, 2000)
+    return
+  }
+  ensureDocumentView(path)
+  const view = documentViews.value[path]
+  if (view.editing && dirtyPaths.value.has(path)) {
+    const keep = window.confirm('Discard unsaved changes?')
+    if (!keep) return
+    discardEdits(path)
+  }
+  view.editing = !view.editing
+  if (view.editing) {
+    syncEditorContent()
+    await nextTick()
+    editorEl.value?.focus()
+  }
+  saveState()
+}
+
+async function saveActiveTab() {
+  const path = activePath.value
+  if (!path || !dirtyPaths.value.has(path)) return
+  try {
+    await markfly.saveFile(path, editorContent.value)
+    fileContents.value[path] = editorContent.value
+    const next = { ...drafts.value }
+    delete next[path]
+    drafts.value = next
+    markDirty(path, false)
+    copyStatus.value = 'Saved'
+  } catch (error) {
+    console.error('Save error:', error)
+    copyStatus.value = 'Save failed'
+  }
+  clearTimeout(copyStatusTimer)
+  copyStatusTimer = setTimeout(() => { copyStatus.value = '' }, 1800)
+  saveState()
+}
+
+async function newMarkdown() {
+  try {
+    const filePath = await markfly.newFileDialog()
+    if (!filePath) return
+    await selectFile(filePath, '')
+    ensureDocumentView(filePath)
+    documentViews.value[filePath].editing = true
+    syncEditorContent()
+    await markfly.watchFile(filePath)
+    await nextTick()
+    editorEl.value?.focus()
+    saveState()
+  } catch (error) {
+    console.error('New Markdown error:', error)
+    copyStatus.value = 'Could not create the file'
+    clearTimeout(copyStatusTimer)
+    copyStatusTimer = setTimeout(() => { copyStatus.value = '' }, 2200)
+  }
+}
+
+watch(editorContent, () => {
+  const path = activePath.value
+  if (!path || !isEditing.value) return
+  drafts.value = { ...drafts.value, [path]: editorContent.value }
+  markDirty(path, editorContent.value !== (fileContents.value[path] ?? ''))
+})
+
+watch(activePath, () => {
+  if (isEditing.value) syncEditorContent()
+})
 
 async function jumpToHeading(id: string) {
   if (showRaw.value && activeView.value) activeView.value.showRaw = false
@@ -395,7 +519,7 @@ async function jumpToHeading(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-async function handleTabAction(path: string, action: 'search' | 'zoom-out' | 'zoom-reset' | 'zoom-in' | 'source' | 'copy') {
+async function handleTabAction(path: string, action: 'search' | 'zoom-out' | 'zoom-reset' | 'zoom-in' | 'source' | 'edit' | 'copy') {
   await selectFile(path)
   ensureDocumentView(path)
   const view = documentViews.value[path]
@@ -409,6 +533,9 @@ async function handleTabAction(path: string, action: 'search' | 'zoom-out' | 'zo
     view.zoom = Math.min(3, view.zoom + 0.1)
   } else if (action === 'source') {
     view.showRaw = !view.showRaw
+  } else if (action === 'edit') {
+    await toggleEditing()
+    return
   } else {
     try {
       await markfly.copyText(fileContents.value[path] ?? '')
@@ -430,7 +557,13 @@ function closeSearch() {
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f' && activePath.value) {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    void saveActiveTab()
+  } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'n') {
+    event.preventDefault()
+    void newMarkdown()
+  } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f' && activePath.value) {
     event.preventDefault()
     openSearch()
   } else if (event.key === 'Escape' && searchOpen.value) {
@@ -638,6 +771,8 @@ async function selectFile(path: string, content?: string) {
 async function removeTab(path: string) {
   const idx = tabs.value.findIndex(t => t.path === path)
   if (idx === -1) return
+  if (dirtyPaths.value.has(path) && !window.confirm('Discard unsaved changes?')) return
+  discardEdits(path)
   tabs.value.splice(idx, 1)
   delete fileContents.value[path]
   delete documentViews.value[path]
@@ -656,6 +791,8 @@ async function removeTab(path: string) {
 async function closeTab(path: string) {
   const tab = tabs.value.find(t => t.path === path)
   if (!tab) return
+  if (dirtyPaths.value.has(path) && !window.confirm('Discard unsaved changes?')) return
+  discardEdits(path)
   tab.active = false
   delete fileContents.value[path]
   if (path === activePath.value) {
@@ -683,7 +820,18 @@ async function loadFileContent(filePath: string) {
     }
 
     const text = await markfly.readFile(filePath)
-    fileContents.value[filePath] = text ?? '> Permission denied — unable to read this file.'
+    const next = text ?? '> Permission denied — unable to read this file.'
+    const dirty = dirtyPaths.value.has(filePath)
+    fileContents.value[filePath] = next
+    if (dirty) {
+      if (filePath === activePath.value && isEditing.value && next !== editorContent.value) {
+        copyStatus.value = 'File changed on disk — unsaved edits kept'
+        clearTimeout(copyStatusTimer)
+        copyStatusTimer = setTimeout(() => { copyStatus.value = '' }, 2500)
+      }
+    } else if (filePath === activePath.value && isEditing.value) {
+      syncEditorContent()
+    }
     if (text) {
       await markfly.watchFile(filePath)
       await markfly.openFilePath(filePath)
@@ -740,6 +888,8 @@ function applyTheme(dark: boolean) {
 onMounted(async () => {
   window.addEventListener('keydown', handleGlobalKeydown)
   removeUpdateStateListener = await markfly.onUpdateState(applyUpdateState)
+  removeMenuNewListener = await markfly.onMenuNew(() => { void newMarkdown() })
+  removeMenuSaveListener = await markfly.onMenuSave(() => { void saveActiveTab() })
   try { applyUpdateState(await markfly.getUpdateState()) } catch { /* updater state unavailable */ }
   const mkLink = (id: string, url: string, disabled: boolean) => {
     const link = document.createElement('link')
@@ -776,6 +926,7 @@ onMounted(async () => {
       documentViews.value[path] = {
         zoom: typeof savedView?.zoom === 'number' ? savedView.zoom : (typeof pref.zoom === 'number' ? pref.zoom : 1),
         showRaw: typeof savedView?.showRaw === 'boolean' ? savedView.showRaw : (typeof pref.showRaw === 'boolean' ? pref.showRaw : false),
+        editing: false,
       }
       if (active) {
         try {
@@ -812,8 +963,12 @@ onMounted(async () => {
 
   await markfly.rendererReady()
 
-  window.addEventListener('beforeunload', () => {
+  window.addEventListener('beforeunload', (event) => {
     saveState()
+    if (dirtyPaths.value.size > 0) {
+      event.preventDefault()
+      event.returnValue = ''
+    }
   })
 })
 
@@ -821,6 +976,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
   removeUpdateStateListener?.()
   removeUpdateStateListener = null
+  removeMenuNewListener?.()
+  removeMenuNewListener = null
+  removeMenuSaveListener?.()
+  removeMenuSaveListener = null
   clearSearchHighlights()
 })
 </script>

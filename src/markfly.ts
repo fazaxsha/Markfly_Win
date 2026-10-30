@@ -63,10 +63,17 @@ export const markfly = {
     listen<UpdateState>("markfly://update-state", (event) => cb(event.payload)),
   getTheme: () => invoke<"light" | "dark">("get_theme"),
   openFileDialog: () => invoke<string | null>("open_file_dialog"),
+  newFileDialog: () => invoke<string | null>("new_file_dialog"),
+  saveFile: (path: string, content: string) =>
+    invoke<boolean>("save_file", { path, content }),
   openFilePath: (path: string) => invoke<boolean>("open_file_path", { path }),
   getRecentFiles: () => invoke<string[]>("get_recent_files"),
   onFileChanged: (cb: () => void): Promise<UnlistenFn> =>
     listen("markfly://file-changed", () => cb()),
+  onMenuNew: (cb: () => void): Promise<UnlistenFn> =>
+    listen("markfly://menu-new", () => cb()),
+  onMenuSave: (cb: () => void): Promise<UnlistenFn> =>
+    listen("markfly://menu-save", () => cb()),
   onOpenFile: (cb: (path: string) => void): Promise<UnlistenFn> =>
     listen<string>("markfly://open-file", (event) => cb(event.payload)),
   loadPref: () => invoke<Record<string, unknown>>("load_pref"),

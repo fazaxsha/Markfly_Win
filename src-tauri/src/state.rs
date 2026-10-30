@@ -61,6 +61,17 @@ impl AppState {
             .map_err(|err| err.to_string())
     }
 
+    /// Writes markdown content for a path the user has opened or created.
+    ///
+    /// The allow-list is the only gate: every saveable path went through the
+    /// open/new dialog (or a saved tab restored from prefs), so the renderer can
+    /// never write to a file the user did not pick.
+    pub fn write_markdown(&self, file_path: &str, content: &str) -> Result<(), String> {
+        let inner = self.lock();
+        markfly_core::fsops::write_authorized_markdown(&inner.authorized, file_path, content)
+            .map_err(|err| err.to_string())
+    }
+
     /// Authorize + add to recents; returns the normalized path string.
     pub fn authorize_and_add_recent(&self, file_path: &str) -> Result<String, String> {
         let mut inner = self.lock();

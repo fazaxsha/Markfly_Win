@@ -24,7 +24,8 @@ pub mod watcher;
 
 pub use error::MarkflyError;
 pub use fsops::{
-    assert_markdown_size, is_markdown_path, read_authorized_markdown, read_markdown_file,
+    assert_markdown_size, create_markdown_file, ensure_markdown_extension, is_markdown_path,
+    read_authorized_markdown, read_markdown_file, write_authorized_markdown, write_markdown_file,
     AuthorizedFiles,
 };
 pub use markdown::{render_preview, render_preview_with_outline};
@@ -128,6 +129,55 @@ mod tests {
         assert!(authorized.has(&normalized_str));
         let content = read_authorized_markdown(&authorized, &normalized_str).unwrap();
         assert_eq!(content, "# hi");
+    }
+
+    #[test]
+    fn write_roundtrip_respects_markdown_policy() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("new-note.md");
+        let path_str = path.to_str().unwrap();
+
+        fsops::write_markdown_file(path_str, "# Hello\n").unwrap();
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "# Hello\n");
+
+        let mut authorized = AuthorizedFiles::new();
+        assert!(fsops::write_authorized_markdown(&authorized, path_str, "x").is_err());
+        authorized.authorize(path_str).unwrap();
+        fsops::write_authorized_markdown(&authorized, path_str, "# Updated\n").unwrap();
+        assert_eq!(read_markdown_file(path_str).unwrap(), "# Updated\n");
+
+        let png = dir.path().join("a.png");
+        assert!(fsops::write_markdown_file(png.to_str().unwrap(), "x").is_err());
+        assert!(fsops::write_markdown_file(path_str, &"a".repeat(config::MAX_MARKDOWN_BYTES as usize + 1)).is_err());
+    }
+
+    #[test]
+    fn creates_empty_markdown_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("empty.md");
+        fsops::create_markdown_file(path.to_str().unwrap()).unwrap();
+        assert_eq!(std::fs::metadata(&path).unwrap().len(), 0);
+        fsops::write_markdown_file(path.to_str().unwrap(), "# keep\n").unwrap();
+        fsops::create_markdown_file(path.to_str().unwrap()).unwrap();
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "# keep\n");
+    }
+
+    #[test]
+    fn extension_is_appended_when_missing() {
+        assert_eq!(
+            fsops::ensure_markdown_extension(r"C:\notes\journal").unwrap(),
+            r"C:\notes\journal.md"
+        );
+        assert_eq!(
+            fsops::ensure_markdown_extension("notes").unwrap(),
+            "notes.md"
+        );
+        assert_eq!(
+            fsops::ensure_markdown_extension("notes.markdown").unwrap(),
+            "notes.markdown"
+        );
+        assert!(fsops::ensure_markdown_extension(r"C:\notes\journal.txt").is_err());
+        assert!(fsops::ensure_markdown_extension(r"C:\notes\").is_err());
     }
 
     #[test]

@@ -11,6 +11,7 @@
           ? 'bg-white dark:bg-[#181715] border-b-2 border-b-indigo-500 text-gray-900 dark:text-gray-100'
           : 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400'"
       >
+        <span v-if="dirtyPaths?.has(tab.path)" class="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" aria-label="Unsaved changes"></span>
         <span class="truncate min-w-0">{{ tab.name }}</span>
         <button
           @click.stop="$emit('close', tab.path)"
@@ -32,6 +33,7 @@ import type { TabItem } from './markfly'
 defineProps<{
   tabs: TabItem[]
   activePath: string | null
+  dirtyPaths?: Set<string>
 }>()
 
 const emit = defineEmits<{

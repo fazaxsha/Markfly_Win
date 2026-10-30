@@ -7,14 +7,21 @@
 use std::path::Path;
 
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
+pub const MENU_NEW: &str = "new";
+pub const MENU_SAVE: &str = "save";
 pub const MENU_OPEN: &str = "open";
 pub const MENU_RECENT_PREFIX: &str = "recent-";
 pub const MENU_EXIT: &str = "exit";
 pub const MENU_RELOAD: &str = "reload";
 pub const MENU_DEVTOOLS: &str = "devtools";
 pub const MENU_CHECK_UPDATES: &str = "check-updates";
+
+/// Emitted when the user asks for a new document / saves the current one
+/// (the editor buffer lives in the renderer, so the menu only forwards).
+pub const EVENT_MENU_NEW: &str = "markfly://menu-new";
+pub const EVENT_MENU_SAVE: &str = "markfly://menu-save";
 
 /// (Re)builds the window menu with the current recent-files list.
 pub fn rebuild(app: &AppHandle) {
@@ -31,6 +38,14 @@ fn build_menu(
     app: &AppHandle,
     recent: &[std::path::PathBuf],
 ) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    let new_file = MenuItemBuilder::new("New Markdown…")
+        .id(MENU_NEW)
+        .accelerator("Ctrl+N")
+        .build(app)?;
+    let save = MenuItemBuilder::new("Save")
+        .id(MENU_SAVE)
+        .accelerator("Ctrl+S")
+        .build(app)?;
     let open = MenuItemBuilder::new("Open")
         .id(MENU_OPEN)
         .accelerator("Ctrl+O")
@@ -59,7 +74,10 @@ fn build_menu(
     }
 
     let file_menu = SubmenuBuilder::new(app, "File")
+        .item(&new_file)
         .item(&open)
+        .item(&save)
+        .separator()
         .item(&recent_submenu.build()?)
         .separator()
         .item(&exit)
@@ -101,6 +119,13 @@ fn build_menu(
         .build()
 }
 
+/// Emits an event only when the main window exists.
+fn emit_to_main(app: &AppHandle, event: &str) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.emit(event, ());
+    }
+}
+
 fn path_label(path: &Path) -> String {
     path.file_name()
         .map(|name| name.to_string_lossy().into_owned())
@@ -111,6 +136,12 @@ fn path_label(path: &Path) -> String {
 pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
     let id = event.id().0.as_str();
     match id {
+        MENU_NEW => {
+            emit_to_main(app, EVENT_MENU_NEW);
+        }
+        MENU_SAVE => {
+            emit_to_main(app, EVENT_MENU_SAVE);
+        }
         MENU_OPEN => {
             tauri::async_runtime::spawn({
                 let app = app.clone();

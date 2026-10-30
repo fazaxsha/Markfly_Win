@@ -34,6 +34,18 @@ pub async fn read_file(state: State<'_, AppState>, path: String) -> Result<Strin
     fsops::read_authorized_markdown(&inner.authorized, &path).map_err(|err| err.to_string())
 }
 
+/// Persists markdown content for a file the user already opened or created.
+#[tauri::command]
+pub async fn save_file(
+    state: State<'_, AppState>,
+    path: String,
+    content: String,
+) -> Result<bool, String> {
+    state.write_markdown(&path, &content)?;
+    state.authorize_and_add_recent(&path)?;
+    Ok(true)
+}
+
 #[tauri::command]
 pub async fn watch_file(
     app: AppHandle,
@@ -104,6 +116,38 @@ pub async fn open_file_dialog(
         .into_path()
         .map_err(|_| "Only local Markdown files can be opened.".to_string())?;
     Ok(Some(state.authorize_and_add_recent(&path.to_string_lossy())?))
+}
+
+/// Creates a new markdown document through the native save dialog.
+///
+/// The dialog is pre-filled with `untitled.md`, a missing `.md` extension is
+/// added automatically and an existing file is never truncated (it is opened
+/// instead), so "New" can not destroy user content.
+#[tauri::command]
+pub async fn new_file_dialog(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let picked = app
+        .dialog()
+        .file()
+        .set_title("New Markdown File")
+        .set_file_name("untitled.md")
+        .add_filter("Markdown", &["md", "markdown", "mdown", "markdn"])
+        .blocking_save_file();
+    let Some(picked) = picked else {
+        return Ok(Option::None);
+    };
+    let path = picked
+        .into_path()
+        .map_err(|_| "Only local Markdown files can be created.".to_string())?;
+    let path = fsops::ensure_markdown_extension(&path.to_string_lossy())
+        .map_err(|err| err.to_string())?;
+    fsops::create_markdown_file(&path).map_err(|err| err.to_string())?;
+    let normalized = state.authorize_and_add_recent(&path)?;
+    crate::menu::rebuild(&app);
+    Ok(Some(normalized))
 }
 
 #[tauri::command]

@@ -74,12 +74,14 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::read_file,
+            commands::save_file,
             commands::copy_text,
             commands::fetch_markdown_url,
             commands::watch_file,
             commands::get_args,
             commands::renderer_ready,
             commands::open_file_dialog,
+            commands::new_file_dialog,
             commands::open_file_path,
             commands::open_external,
             commands::get_theme,
